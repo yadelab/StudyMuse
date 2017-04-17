@@ -129,7 +129,9 @@ function getWelcomeResponse(callback) {
 function handleFlashCardIntent(intent, session, callback) {
     console.log("FLASH CARDS");
     
-    var speechOutput,
+    var sessionAttributes,
+        speechOutput,
+        repromptText,
         speechletResponse,
         shouldEndSession = false;
 
@@ -150,7 +152,9 @@ function handleFlashCardIntent(intent, session, callback) {
 function handlePlannerIntent(intent, session, callback) {
     console.log("PLANNER");
     
-    var speechOutput,
+    var sessionAttributes,
+        speechOutput,
+        repromptText,
         speechletResponse,
         shouldEndSession = false;
 
