@@ -1,0 +1,37 @@
+FlashCardIntent create {Biology Midterm|Deck}
+FlashCardIntent Can I look through my flash cards
+FlashCardIntent go to flash cards
+FlashCardIntent go to my flash cards
+FlashCardIntent flash cards
+PlannerIntent planner
+PlannerIntent open my to do list
+PlannerIntent go to my to do list
+PlannerIntent go to my planner
+PlannerIntent open my planner
+PlannerIntent open planner
+PlannerIntent Yes {Twelve point font double spaced|Details}
+PlannerIntent {Three page essay|Details}
+PlannerIntent {Date}
+PlannerIntent Add assignment
+PlannerIntent Make a new assignment
+PlannerIntent Create assignment
+LecturesIntent lectures
+LecturesIntent {Lecture Fourteen|Lecture} please
+LecturesIntent go to {Biology Lecture One|Lecture}
+LecturesIntent Record {Duration}
+LecturesIntent Record the next {Duration}
+LecturesIntent Clip {Duration}
+LecturesIntent Name it {Midterm Information|CheckPointName}
+LecturesIntent {Meiosis|CheckPointName}
+LecturesIntent Go to {Meiosis|CheckPointName} checkpoint
+LecturesIntent I'd like to go to {Meiosis|CheckPointName} checkpoint
+LecturesIntent Ready
+AMAZON.HelpIntent what can i say
+AMAZON.HelpIntent help
+AMAZON.HelpIntent i need help
+AMAZON.HelpIntent what can i do
+AMAZON.HelpIntent don't know
+AMAZON.HelpIntent i don't know
+AMAZON.HelpIntent i don't know what to do
+AMAZON.StopIntent Stop
+AMAZON.StopIntent Quit
