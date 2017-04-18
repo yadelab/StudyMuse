@@ -1,0 +1,15 @@
+LIST_OF_SUBJECTS
+math
+english
+linguistics
+computer science
+electrical engineering
+cognitive science
+biology
+chemistry
+physics
+spanish
+japanese
+chinese
+social welfare
+history
