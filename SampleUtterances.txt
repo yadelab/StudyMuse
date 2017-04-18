@@ -9,12 +9,24 @@ PlannerIntent go to my to do list
 PlannerIntent go to my planner
 PlannerIntent open my planner
 PlannerIntent open planner
-PlannerIntent Yes {Twelve point font double spaced|Details}
-PlannerIntent {Three page essay|Details}
+PlannerIntent {PlannerState} to pending assignments
+PlannerIntent {PlannerState} to my assignments
+PlannerIntent {PlannerState} to assignments
+PlannerIntent {PlannerState} assignment
+PlannerIntent {PlannerState}
+PlannerIntent The details are {midterm will cover week one through six|Details}
+PlannerIntent details are {midterm will cover week one through six and it will be two hours|Details}
+PlannerIntent The details are the following {midterm will cover week one through six and it will be in class|Details}
+PlannerIntent The name is {essay|AssignmentName}
+PlannerIntent name is {midterm one|AssignmentName}
 PlannerIntent {Date}
-PlannerIntent Add assignment
-PlannerIntent Make a new assignment
-PlannerIntent Create assignment
+PlannerIntent The date is {Date}
+PlannerIntent date is {Date}
+PlannerIntent {Date} is the date
+PlannerIntent {Subject}
+PlannerIntent The subject is {Subject}
+PlannerIntent subject is {Subject}
+PlannerIntent {Subject} is the subject
 LecturesIntent lectures
 LecturesIntent {Lecture Fourteen|Lecture} please
 LecturesIntent go to {Biology Lecture One|Lecture}

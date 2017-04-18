@@ -6,8 +6,16 @@
 // when can invalid intent happen? what does the throw do?
 // should subject slot type be defined?
 // planner intent: how to deal with difference between text and date?
+// session attributes don't need speechoutput or reprompttext
+// if they are in the middle of creating a flash card and they then say open planner... is there a way to prompt them?
 
 var AWS = require("aws-sdk");
+AWS.config.update({
+    region: "us-east-1"
+    // The endpoint is found automatically
+});
+
+var docClient = new AWS.DynamoDB.DocumentClient();
 
 // Route the incoming request based on type (LaunchRequest, IntentRequest,
 // etc.) The JSON body of the request is provided in the event parameter.
@@ -111,17 +119,15 @@ function getWelcomeResponse(callback) {
     
     speechOutput = "Study Muse here, how can I help you today? ";
 
-    repromptText = "To create a deck or quiz yourself, say flashcards. " +
+    repromptText = "To create a deck or quiz yourself, say flash cards. " +
                     "To add or modify your to do list, say planner. " +
                     "To listen to your recorded lectures and create checkpoints, say lectures. ";
     
     sessionAttributes = {
-        "speechOutput": speechOutput,
-        "repromptText": repromptText,
         "state" : "welcome"
     };
 
-    speechletResponse = buildSpeechletResponse(speechOutput, speechOutput, shouldEndSession);
+    speechletResponse = buildSpeechletResponse(speechOutput, repromptText, shouldEndSession);
 
     callback(sessionAttributes, speechletResponse);
 }
@@ -139,8 +145,6 @@ function handleFlashCardIntent(intent, session, callback) {
 
     
     sessionAttributes = {
-        "speechOutput": speechOutput,
-        "repromptText": speechOutput,
         "state" : "welcome"
     };
 
@@ -155,21 +159,212 @@ function handlePlannerIntent(intent, session, callback) {
     var sessionAttributes,
         speechOutput,
         repromptText,
+        state = "planner",
         speechletResponse,
         shouldEndSession = false;
+    if (session.attributes.state == "welcome") {
+        console.log("WELCOME");
+        speechOutput = "You are now at your to do list. Would you like to listen to your pending assignments " +
+                        "or would you like to add, modify, or delete an assignment?";
+        repromptText = "please say listen, add, modify, or delete assignment";
+        //state = "planner";
+        sessionAttributes = {
+            "state" : state
+        };
+        speechletResponse = buildSpeechletResponse(speechOutput, repromptText, shouldEndSession);
+        callback(sessionAttributes, speechletResponse);
+    } else if ("PlannerState" in intent.slots && "value" in intent.slots.PlannerState) {
+        console.log("PLANNER STATE");
+        var plannerState = intent.slots.PlannerState.value.toLowerCase();
+        var segment;
+        if (plannerState === "listen" || plannerState === "hear") {
+            segment = "listen";
+            //listen will be done here...
+        } else if (plannerState === "create" || plannerState === "add") {
+            segment = "create";
+            //name, date, subject, details
+            speechOutput = "Please say the name of the assignment by filling in the blank in the following: " +
+                            "the name is blank";
+        } else if (plannerState === "modify" || plannerState === "edit") {
+            segment = "edit";
+        } else if (plannerState === "delete" || plannerState === "remove") {
+            segment = "delete";
+        }
 
-    speechOutput = "planner";
+        sessionAttributes = {
+            "state" : state,
+            "segment": segment
+        };
+        speechletResponse = buildSpeechletResponse(speechOutput, speechOutput, shouldEndSession);
+        callback(sessionAttributes, speechletResponse);
+    } else if ("AssignmentName" in intent.slots && "value" in intent.slots.AssignmentName) {
+        console.log("ASSIGNMENT NAME");
+        var name = intent.slots.AssignmentName.value.toLowerCase();
+        sessionAttributes = {
+            "state" : state,
+            "segment": session.attributes.segment,
+            "name": name
+        };
+        //gonna depend on segment??
+        speechOutput = "Please say the date next. Say the month then day."
+
+        speechletResponse = buildSpeechletResponse(speechOutput, speechOutput, shouldEndSession);
+        callback(sessionAttributes, speechletResponse);
+    } else if ("Date" in intent.slots && "value" in intent.slots.Date) {
+        console.log("DATE");
+        // this is where delete ends
+        // edit... depends what they want to edit
+        var date = intent.slots.Date.value.toLowerCase();
+        console.log("date = " + date);
+        sessionAttributes = {
+            "state" : state,
+            "segment": session.attributes.segment,
+            "name": session.attributes.name,
+            "date": date
+        };
+
+        speechOutput = "Please state the subject."
+
+        speechletResponse = buildSpeechletResponse(speechOutput, speechOutput, shouldEndSession);
+        callback(sessionAttributes, speechletResponse);
+    } else if ("Subject" in intent.slots && "value" in intent.slots.Subject) {
+        console.log("SUBJECT");
+        var subject = intent.slots.Subject.value.toLowerCase();
+        sessionAttributes = {
+            "state" : state,
+            "segment": session.attributes.segment,
+            "name": session.attributes.name,
+            "date": session.attributes.date,
+            "subject": subject
+        };
+
+        speechOutput = "Please state the details by filling in the blank in the following: " +
+                            "the details are blank";
+
+        speechletResponse = buildSpeechletResponse(speechOutput, speechOutput, shouldEndSession);
+        callback(sessionAttributes, speechletResponse);
+    } else if ("Details" in intent.slots && "value" in intent.slots.Details) {
+        console.log("DETAILS");
+        //this is where create ends...
+        var details = intent.slots.Details.value.toLowerCase();
+        // sessionAttributes = {
+        //     "state" : state,
+        //     "segment": session.attributes.segment,
+        //     "name": session.attributes.name,
+        //     "date": session.attributes.date
+        // };
+        var params = {
+        TableName: "Planner",
+        Item: {
+            subject: session.attributes.subject,
+            date: session.attributes.date,
+            name: session.attributes.name,
+            details: details
+            }
+        };
+
+        docClient.put(params, function(err, data) {
+            if (err) {
+                console.log("ERROR");
+            } else {
+                console.log("SUCCESS");
+            }
+            //may need to put this in success, make callback(err) if error
+            sessionAttributes = {
+                "state": state
+            }
+            speechOutput = session.attributes.name + "has successfully been added. Anything else I can do for you?";
+            speechletResponse = buildSpeechletResponse(speechOutput, speechOutput, shouldEndSession);
+            callback(sessionAttributes, speechletResponse);
+        });
+
+        // sessionAttributes = {
+        //     "state": state
+        // }
+
+        // speechletResponse = buildSpeechletResponse(speechOutput, speechOutput, shouldEndSession);
+        // callback(sessionAttributes, speechletResponse);
+
+    } 
 
 
-    sessionAttributes = {
-        "speechOutput": speechOutput,
-        "repromptText": speechOutput,
-        "state" : "welcome"
-    };
 
-    speechletResponse = buildSpeechletResponse(speechOutput, speechOutput, shouldEndSession);
+    
+    //create
+    // var params = {
+    //     TableName: "Planner",
+    //     Item: {
+    //         subject: "english",
+    //         date: new Date().toISOString(),
+    //         name: "essay",
+    //         details: "three pages, twelve point font"
+    //     }
+    // };
 
-    callback(sessionAttributes, speechletResponse);
+    // docClient.put(params, function(err, data) {
+    //     if (err) {
+    //         console.log("ERROR");
+    //     } else {
+    //         console.log("SUCCESS");
+    //     }
+    //     speechletResponse = buildSpeechletResponse(speechOutput, speechOutput, shouldEndSession);
+    //     callback(sessionAttributes, speechletResponse);
+    // });
+    
+    
+
+    // delete needs name and date
+    // var params = {
+    //     TableName: "Planner",
+    //     Key: {
+    //         //subject: "english",
+    //         //date: "2017-4-20",
+    //         name: "essay"
+    //         //details: "three pages, twelve point font"
+    //     }
+    // };
+
+    // docClient.delete(params, function(err, data) {
+    //     if (err) {
+    //         //console.log("ERROR");
+    //         console.error("Unable to delete item. Error JSON:", JSON.stringify(err, null, 2));
+    //     } else {
+    //         console.log("SUCCESS");
+    //     }
+    //     //speechletResponse = buildSpeechletResponse(speechOutput, speechOutput, shouldEndSession);
+    //     //callback(sessionAttributes, speechletResponse);
+    //     callback(null, data);
+    // });
+
+    
+
+
+    // edit needs date and name... going to have to modify the updateExpression and attribute values...
+    // var params = {
+    //     TableName: "Planner",
+    //     Key: {
+    //         date: "2017-4-20",
+    //         name: "essay"
+    //     },
+    //     UpdateExpression: "set details = :details",
+    //     ExpressionAttributeValues: {
+    //         ":details": "one page, single spaced"
+    //     }
+
+    // };
+
+    
+
+    // docClient.update(params, function(err, data) {
+    //     if (err) {
+    //         console.error("Unable to update item. Error JSON:", JSON.stringify(err, null, 2));
+    //     } else {
+    //         console.log("UpdateItem succeeded:", JSON.stringify(data, null, 2));
+    //     }
+    //     //speechletResponse = buildSpeechletResponse(speechOutput, speechOutput, shouldEndSession);
+    //     //callback(sessionAttributes, speechletResponse);
+    //     callback(null, data);
+    // });
 }
 
 function handleLecturesIntent(intent, session, callback) {
@@ -183,8 +378,6 @@ function handleLecturesIntent(intent, session, callback) {
 
 
     sessionAttributes = {
-        "speechOutput": speechOutput,
-        "repromptText": speechOutput,
         "state" : "welcome"
     };
 
