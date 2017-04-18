@@ -4,10 +4,10 @@
 
 // Should we have cards?
 // when can invalid intent happen? what does the throw do?
-// should subject slot type be defined?
 // planner intent: how to deal with difference between text and date?
 // session attributes don't need speechoutput or reprompttext
 // if they are in the middle of creating a flash card and they then say open planner... is there a way to prompt them?
+// after successful create... what to do? How to handle Yes/No ?
 
 var AWS = require("aws-sdk");
 AWS.config.update({
@@ -94,7 +94,9 @@ function onIntent(intentRequest, session, callback) {
         handleStopRequest(intent, session, callback);
     } else {
         //handleInvalidIntent(intent, session, callback);
-        throw "Invalid intent";
+        console.log("INVALID INTENT");
+        getWelcomeResponse(callback);
+        //throw "Invalid intent";
     }
 
 }
@@ -167,7 +169,6 @@ function handlePlannerIntent(intent, session, callback) {
         speechOutput = "You are now at your to do list. Would you like to listen to your pending assignments " +
                         "or would you like to add, modify, or delete an assignment?";
         repromptText = "please say listen, add, modify, or delete assignment";
-        //state = "planner";
         sessionAttributes = {
             "state" : state
         };
@@ -183,13 +184,14 @@ function handlePlannerIntent(intent, session, callback) {
         } else if (plannerState === "create" || plannerState === "add") {
             segment = "create";
             //name, date, subject, details
-            speechOutput = "Please say the name of the assignment by filling in the blank in the following: " +
-                            "the name is blank";
         } else if (plannerState === "modify" || plannerState === "edit") {
             segment = "edit";
         } else if (plannerState === "delete" || plannerState === "remove") {
             segment = "delete";
         }
+
+        speechOutput = "Please say the name of the assignment by filling in the blank in the following: " +
+                            "the name is blank";
 
         sessionAttributes = {
             "state" : state,
@@ -266,6 +268,8 @@ function handlePlannerIntent(intent, session, callback) {
         docClient.put(params, function(err, data) {
             if (err) {
                 console.log("ERROR");
+                // you can say there was an error... please state the details...
+                // fill in session attributes as if it was subject
             } else {
                 console.log("SUCCESS");
             }
@@ -273,7 +277,7 @@ function handlePlannerIntent(intent, session, callback) {
             sessionAttributes = {
                 "state": state
             }
-            speechOutput = session.attributes.name + "has successfully been added. Anything else I can do for you?";
+            speechOutput = session.attributes.name + " has successfully been added. Anything else I can do for you?";
             speechletResponse = buildSpeechletResponse(speechOutput, speechOutput, shouldEndSession);
             callback(sessionAttributes, speechletResponse);
         });
@@ -340,15 +344,24 @@ function handlePlannerIntent(intent, session, callback) {
 
 
     // edit needs date and name... going to have to modify the updateExpression and attribute values...
+    // if they want to change name or date you have to delete it... then re-add...
+    // cant update the keys
     // var params = {
     //     TableName: "Planner",
     //     Key: {
-    //         date: "2017-4-20",
+    //         date: "2017-4-21",
     //         name: "essay"
     //     },
-    //     UpdateExpression: "set details = :details",
+    //     // UpdateExpression: "set details = :details",
+    //     // ExpressionAttributeValues: {
+    //     //     ":details": "one page, single spaced"
+    //     // }
+    //     UpdateExpression: "set #ok_date = :date",
     //     ExpressionAttributeValues: {
-    //         ":details": "one page, single spaced"
+    //         ":date": "2017-5-1"
+    //     },
+    //     ExpressionAttributeNames: {
+    //         "#ok_date": "date"
     //     }
 
     // };
@@ -364,6 +377,24 @@ function handlePlannerIntent(intent, session, callback) {
     //     //speechletResponse = buildSpeechletResponse(speechOutput, speechOutput, shouldEndSession);
     //     //callback(sessionAttributes, speechletResponse);
     //     callback(null, data);
+    // });
+
+
+    // get item needs date and name
+    // var params = {
+    // TableName: "Planner",
+    // Key:{
+    //     date: "2017-4-21",
+    //     name: "essay"
+    //     }
+    // };
+
+    // docClient.get(params, function(err, data) {
+    //     if (err) {
+    //         console.error("Unable to read item. Error JSON:", JSON.stringify(err, null, 2));
+    //     } else {
+    //         console.log("GetItem succeeded:", JSON.stringify(data, null, 2));
+    //     }
     // });
 }
 
